@@ -1,11 +1,12 @@
 // 3D pano, malzeme rafı ve etkileşimler (three.js)
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { TIPLER, RAF_SIRASI, klemensler, ucAnlami, GRUP_RENK, KABLO_RENKLERI } from './malzemeler.js';
 import { kontrolEt, oturt, motorDurumu, motorAdi, otomatikRenk, renkAglari, beklenenRenk, gorevler, aglar } from './cozucu.js';
 import { ornekDevre } from './ornek.js';
 
-export const SURUM = '0.5.2';
+export const SURUM = '0.5.3';
 const RAYLAR = [17, 2, -13];
 const PANO = { w: 72, h: 50, cx: 0, cy: 2 };
 const KABLO_RENK = Object.fromEntries(Object.entries(KABLO_RENKLERI).map(([k, v]) => [k, v.renk]));
@@ -47,7 +48,7 @@ gunes.position.set(25, 40, 60);
 scene.add(gunes);
 
 // Montaj plakası ve DIN rayları
-const plaka = new THREE.Mesh(new THREE.BoxGeometry(PANO.w, PANO.h, 0.6), new THREE.MeshStandardMaterial({ color: '#c9ccd1', metalness: 0.3, roughness: 0.7 }));
+const plaka = new THREE.Mesh(new THREE.BoxGeometry(PANO.w, PANO.h, 0.6), new THREE.MeshStandardMaterial({ color: '#b3b8be', metalness: 0.2, roughness: 0.85 }));
 plaka.position.set(PANO.cx, PANO.cy, -0.3);
 plaka.userData.plaka = true;
 scene.add(plaka);
@@ -70,10 +71,38 @@ for (const x of [-1, 1]) {
   const k = new THREE.Mesh(new THREE.BoxGeometry(YAN.dis - YAN.ic, BANTLAR[0].ust - BANTLAR[3].alt, 1.0), kanalMat);
   k.position.set(x * (YAN.ic + YAN.dis) / 2, (BANTLAR[0].ust + BANTLAR[3].alt) / 2, 0.5); scene.add(k);
 }
+// DIN rayı: 35 mm genişlik, 7,5 mm yükseklik "şapka" kesitli (TH35-7,5), delikli, galvaniz.
+// Parlak görünüm için yalnız raylara ortam yansıması verilir (öteki malzemeler değişmez).
+const yansima = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const rayMat = new THREE.MeshStandardMaterial({ color: '#f4f6f8', metalness: 1.0, roughness: 0.16, envMap: yansima, envMapIntensity: 1.6 });
+function rayKesiti() {
+  // Kesit (y, z): arkada gövde, iki yanda duvar, önde dışa açılan dudaklar; sac kalınlığı 1 mm
+  const k = new THREE.Shape();
+  [[-1.75, 0.65], [-1.35, 0.65], [-1.35, 0], [1.35, 0], [1.35, 0.65], [1.75, 0.65], [1.75, 0.75], [1.25, 0.75], [1.25, 0.1], [-1.25, 0.1], [-1.25, 0.75], [-1.75, 0.75]]
+    .forEach(([a, b], i) => (i ? k.lineTo(a, b) : k.moveTo(a, b)));
+  k.closePath();
+  return k;
+}
+const RAY_BOY = 2 * YAN.ic - 1;
+const rayGeo = new THREE.ExtrudeGeometry(rayKesiti(), { depth: RAY_BOY, bevelEnabled: false });
+// yerel (x, y, z) -> dünya (z, x, y): kesit y-z düzleminde, boy x ekseni boyunca
+rayGeo.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1));
+rayGeo.translate(-RAY_BOY / 2, 0, 0);
+// Gövdedeki uzun delikler (yaklaşık 15 x 5 mm, 25 mm aralıkla)
+const delikGeo = new THREE.BoxGeometry(1.5, 0.52, 0.02);
+const delikMat = new THREE.MeshStandardMaterial({ color: '#2f343a', roughness: 0.9 });
+const delikSay = Math.floor((RAY_BOY - 1) / 2.5);
 for (const y of RAYLAR) {
-  const ray = new THREE.Mesh(new THREE.BoxGeometry(2 * YAN.ic - 1, 3.5, 0.75), new THREE.MeshStandardMaterial({ color: '#d5d9de', metalness: 0.5, roughness: 0.4 }));
-  ray.position.set(PANO.cx, y, 0.375);
+  const ray = new THREE.Mesh(rayGeo, rayMat);
+  ray.position.set(PANO.cx, y, 0);
   scene.add(ray);
+  const delikler = new THREE.InstancedMesh(delikGeo, delikMat, delikSay);
+  const m = new THREE.Matrix4();
+  for (let i = 0; i < delikSay; i++) {
+    m.makeTranslation(PANO.cx - ((delikSay - 1) * 2.5) / 2 + i * 2.5, y, 0.11);
+    delikler.setMatrixAt(i, m);
+  }
+  scene.add(delikler);
 }
 
 // ---------- doku yardımcıları ----------
