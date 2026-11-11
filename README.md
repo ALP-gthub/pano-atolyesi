@@ -24,7 +24,7 @@ Eğitim ve alıştırma içindir. Gerçek bir pano tasarımı, montajı ya da de
 
 ## Geliştirme
 
-Gerekenler: Node.js 20 ya da üstü.
+Gerekenler: Node.js 22 ya da üstü (yayın iş akışı Node.js 24 kullanır).
 
 ```
 npm ci
