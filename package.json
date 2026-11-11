@@ -1,6 +1,6 @@
 {
   "name": "pano-atolyesi",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Tarayıcıda çalışan interaktif kumanda devresi eğitim ve sınav seti (yıldız üçgen)",
   "private": true,
   "type": "module",

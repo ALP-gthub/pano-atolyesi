@@ -5,7 +5,7 @@ import { TIPLER, RAF_SIRASI, klemensler, ucAnlami, GRUP_RENK, KABLO_RENKLERI } f
 import { kontrolEt, oturt, motorDurumu, motorAdi, otomatikRenk, renkAglari, beklenenRenk, gorevler, aglar } from './cozucu.js';
 import { ornekDevre } from './ornek.js';
 
-export const SURUM = '0.5.0';
+export const SURUM = '0.5.1';
 const RAYLAR = [17, 2, -13];
 const PANO = { w: 72, h: 50, cx: 0, cy: 2 };
 const KABLO_RENK = Object.fromEntries(Object.entries(KABLO_RENKLERI).map(([k, v]) => [k, v.renk]));
